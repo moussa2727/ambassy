@@ -1,6 +1,6 @@
 import { useToast } from '@/components/shared/Toast';
 
-// Hook personnalisé pour faciliter l'utilisation des toasts
+// Hook personnalisé pour faciliter l'utilisation des toasts avec messages prédéfinis
 export const useAppToast = () => {
   const { success, error, info, warning } = useToast();
 

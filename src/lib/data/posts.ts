@@ -25,6 +25,11 @@ export const posts: Post[] = [
     <blockquote>« Le futur du web n'est pas moins de JavaScript — c'est du JavaScript au bon endroit, au bon moment. »</blockquote>
     <p>Les Server Actions introduits en v5 permettent désormais de gérer des mutations de données directement depuis les composants Astro, sans API intermédiaire. Une simplification radicale du stack pour les petits et moyens projets.</p>
     <h2>Intégration avec Next.js</h2>
+
+
+
+
+    
     <p>Pour les équipes déjà sur Next.js, Astro peut coexister dans un monorepo Turborepo. L'idée : utiliser Astro pour les pages de contenu statique (blog, docs, landing pages) et Next.js pour l'application principale avec authentification et mutations. Les deux partagent un design system commun via un package local.</p>
     <p>Les benchmarks sont éloquents : un site Astro typique charge 40% plus vite qu'un équivalent Next.js, avec un Lighthouse score moyen de 98/100 sans optimisation particulière.</p>`
   },

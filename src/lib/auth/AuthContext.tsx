@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { useToast } from '@/components/shared/Toast';
 
 // Types
 interface User {
@@ -49,6 +49,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { success, error } = useToast();
 
   // Vérifier l'authentification au chargement
   useEffect(() => {
@@ -88,10 +89,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Succès
-      toast.success(data.message || 'Inscription réussie !');
+      success(data.message || 'Inscription réussie !');
       return data;
     } catch (error: any) {
-      toast.error(error.message || "Erreur lors de l'inscription");
+      error(error.message || "Erreur lors de l'inscription");
       throw error;
     } finally {
       setLoading(false);
@@ -130,11 +131,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ? 'Bienvenue administrateur !'
           : `Bienvenue ${data.user.prenom} ${data.user.nom} !`;
 
-      toast.success(welcomeMessage);
+      success(welcomeMessage);
 
       return data;
     } catch (error: any) {
-      toast.error(error.message || 'Erreur de connexion');
+      error(error.message || 'Erreur de connexion');
       throw error;
     } finally {
       setLoading(false);
@@ -158,9 +159,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Réinitialiser l'utilisateur
       setUser(null);
 
-      toast.success(data.message || 'Déconnexion réussie');
+      success(data.message || 'Déconnexion réussie');
     } catch (error: any) {
-      toast.error(error.message || 'Erreur lors de la déconnexion');
+      error(error.message || 'Erreur lors de la déconnexion');
       throw error;
     }
   };
@@ -178,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (response.status === 401) {
           // Token expiré, déconnexion avec toast
           setUser(null);
-          toast.error('Session terminée - Veuillez vous reconnecter');
+          error('Session terminée - Veuillez vous reconnecter');
         }
         return false;
       }
@@ -204,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!response.ok) {
         if (response.status === 401) {
           setUser(null);
-          toast.error('Session terminée - Veuillez vous reconnecter');
+          error('Session terminée - Veuillez vous reconnecter');
         }
         setLoading(false);
         return;
@@ -242,7 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return data.users;
     } catch (error: any) {
-      toast.error(error.message);
+      error(error.message);
       throw error;
     }
   };
