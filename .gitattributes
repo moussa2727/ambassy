@@ -1,0 +1,30 @@
+﻿# Auto detect text files and perform LF normalization
+* text=auto
+
+# Force LF for specific files
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.sass text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+
+# Binary files (don't touch)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.exe binary
+
+# Exclude build files from line ending checks
+.next/** -text
+node_modules/** -text

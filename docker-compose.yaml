@@ -1,0 +1,89 @@
+services:
+  app:
+    build: .
+    container_name: ambassade-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+      - ./uploads:/app/uploads
+    networks:
+      - ambassade-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  nginx:
+    image: nginx:alpine
+    container_name: ambassade-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - app
+    networks:
+      - ambassade-network
+
+  mongodb:
+    image: mongo:6.0
+    container_name: ambassade-mongodb
+    restart: unless-stopped
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - ambassade-network
+
+
+  backup:
+    image: mongo:6.0
+    container_name: ambassade-backup
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    volumes:
+      - ./backups/mongodb:/backup
+    networks:
+      - ambassade-network
+    command: >
+      sh -c 'while true; do
+        /backup.sh;
+        sleep 86400;
+      done'
+
+networks:
+  ambassade-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  mongodb_data:
+    driver: local
