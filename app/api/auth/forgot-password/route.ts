@@ -1,5 +1,5 @@
 // app/api/auth/forgot-password/route.ts
-import clientPromise from '@/lib/mongo';
+import clientPromise from '@/lib/data/mongo';
 import crypto from 'crypto';
 import { sendResetEmail } from '@/services/ResetEmail';
 

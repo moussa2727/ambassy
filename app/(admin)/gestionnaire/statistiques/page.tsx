@@ -1,4 +1,6 @@
-'use client';
+"use client";
+
+import Head from 'next/head';
 
 import {
   LineChart,
@@ -102,6 +104,13 @@ export default function StatistiquesPage() {
 
   return (
     <>
+      <Head>
+        <title>Tableau de bord - Admin - Ambassade Du Mali Au Maroc</title>
+        <meta name="description" content="Tableau de bord administrateur avec statistiques et indicateurs clés." />
+        <meta name="robots" content="noindex,nofollow" />
+        <link rel="icon" href="/favicon.png" />
+      </Head>
+
       <div className="space-y-8">
         {/* Header */}
         <div className="flex justify-between items-center">

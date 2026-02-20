@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
 import React, { useState } from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/navigation';
 import {
   FiUser,
@@ -14,10 +15,10 @@ import {
   FiEye,
   FiEyeOff,
 } from 'react-icons/fi';
-import { useAuth } from '@/services/auth/AuthContext';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 export default function MonProfilPage() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading, me } = useAuth();
   const router = useRouter();
 
   // Vérifier l'authentification et le rôle
@@ -35,13 +36,25 @@ export default function MonProfilPage() {
     }
   }, [isAuthenticated, user, loading, router]);
 
+  // Mettre à jour le formulaire quand les données utilisateur changent
+  React.useEffect(() => {
+    if (user) {
+      setFormData({
+        nom: user.nom || '',
+        prenom: user.prenom || '',
+        email: user.email || '',
+        telephone: user.telephone || '',
+      });
+    }
+  }, [user]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    nom: user?.nom || '',
-    prenom: user?.prenom || '',
-    email: user?.email || '',
-    telephone: user?.telephone || '',
+    nom: '',
+    prenom: '',
+    email: '',
+    telephone: '',
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -68,31 +81,130 @@ export default function MonProfilPage() {
     }));
   };
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Logique de mise à jour du mot de passe
-    console.log('Mise à jour du mot de passe:', passwordData);
-    // Réinitialiser les champs
-    setPasswordData({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
+    
+    if (!user) {
+      alert('Utilisateur non connecté');
+      return;
+    }
+    
+    // Validation des mots de passe
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert('Les mots de passe ne correspondent pas');
+      return;
+    }
+    
+    if (passwordData.newPassword.length < 6) {
+      alert('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          id: user._id,
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Erreur lors de la mise à jour du mot de passe');
+      }
+
+      // Réinitialiser les champs
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      
+      // Afficher un message de succès
+      alert('Mot de passe mis à jour avec succès');
+    } catch (error: any) {
+      console.error('Erreur mise à jour mot de passe:', error);
+      alert(error.message || 'Erreur lors de la mise à jour du mot de passe');
+    }
   };
 
-  const handleSave = () => {
-    // Logique de sauvegarde
-    console.log('Sauvegarde des données:', formData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    if (!user) {
+      alert('Utilisateur non connecté');
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/auth/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          id: user._id,
+          nom: formData.nom,
+          prenom: formData.prenom,
+          email: formData.email,
+          telephone: formData.telephone,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Erreur lors de la mise à jour');
+      }
+
+      // Mettre à jour les données utilisateur dans le contexte
+      await me();
+      setIsEditing(false);
+      
+      // Afficher un message de succès
+      alert('Profil mis à jour avec succès');
+    } catch (error: any) {
+      console.error('Erreur sauvegarde:', error);
+      alert(error.message || 'Erreur lors de la sauvegarde');
+    }
   };
 
   const handleCancel = () => {
-    // Remettre les données originales
+    // Remettre les données originales depuis l'utilisateur
+    if (user) {
+      setFormData({
+        nom: user.nom || '',
+        prenom: user.prenom || '',
+        email: user.email || '',
+        telephone: user.telephone || '',
+      });
+    }
     setIsEditing(false);
   };
 
+  // Afficher un loader pendant le chargement
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-200 border-t-emerald-600 mx-auto mb-4"></div>
+          <p className="text-emerald-700 font-medium">Chargement de votre profil...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
+      <Head>
+        <title>Mon Profil - Admin - Ambassade Du Mali Au Maroc</title>
+        <meta name="description" content="Espace profil administrateur." />
+        <meta name="robots" content="noindex,nofollow" />
+        <link rel="icon" href="/favicon.png" />
+      </Head>
+
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
@@ -235,6 +347,16 @@ export default function MonProfilPage() {
                 Sécurité
               </h3>
               <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <input
+                  type="email"
+                  name="username"
+                  value={user?.email || ''}
+                  readOnly
+                  hidden
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  autoComplete="username"
+                />
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Mot de passe actuel

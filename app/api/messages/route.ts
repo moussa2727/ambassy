@@ -1,7 +1,7 @@
-import { requireAuth, AuthUser } from '@/lib/auth/middleware';
+import { requireAdmin, AuthUser } from '@/lib/auth/middleware';
 import { NextRequest } from 'next/server';
 import { ObjectId } from 'mongodb';
-import clientPromise from '@/lib/mongo';
+import clientPromise from '@/lib/data/mongo';
 
 // Import des services email
 import { ApiResponse } from '@/types/index';
@@ -73,7 +73,7 @@ const handleError = (
 };
 
 // GET - Récupérer les messages (admin) avec pagination et filtres
-export const GET = requireAuth(async (req: NextRequest, context: { user: AuthUser }): Promise<Response> => {
+export const GET = requireAdmin(async (req: NextRequest, context: { user: AuthUser }): Promise<Response> => {
   try {
     const { searchParams } = new URL(req.url);
 
@@ -277,7 +277,7 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 // PATCH - Mettre à jour un message (admin seulement) avec envoi de réponse par email
-export const PATCH = requireAuth(
+export const PATCH = requireAdmin(
   async (req: NextRequest, context: { user: AuthUser }): Promise<Response> => {
     try {
     const body = await (req as unknown as Request).json();
@@ -399,7 +399,7 @@ export const PATCH = requireAuth(
 );
 
 // DELETE - Version améliorée (optionnelle)
-export const DELETE = requireAuth(
+export const DELETE = requireAdmin(
   async (req: NextRequest, context: { user: AuthUser }): Promise<Response> => {
     try {
       const { searchParams } = new URL(req.url);

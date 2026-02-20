@@ -1,6 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+// Utility function for debouncing
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   FiMail,
@@ -27,8 +39,10 @@ import {
   FiArchive,
   FiInbox,
 } from 'react-icons/fi';
-import { useToast } from '@/components/ui/Toast';
-import { useAuth } from '@/services/auth/AuthContext';
+import { useToast } from '@/components/shared/Toast';
+import { useAuth } from '@/lib/auth/AuthContext';
+import Head from 'next/head';
+import React from 'react';
 
 interface Message {
   id: string;
@@ -98,22 +112,62 @@ export default function AdminMessagesPage() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<'list' | 'table'>('table');
+  
+  // États pour les popovers de confirmation
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    messageId: string | null;
+    messageCount?: number;
+  }>({ isOpen: false, messageId: null });
 
-  // Vérification d'authentification uniquement
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
+  // État pour le popover de réponse
+  const [replyConfirm, setReplyConfirm] = useState<{
+    isOpen: boolean;
+    messageId: string | null;
+    responseText: string;
+  }>({ isOpen: false, messageId: null, responseText: '' });
+
+  // Vérifier l'authentification et le rôle
+   React.useEffect(() => {
+     if (loading) return;
+ 
+     if (!isAuthenticated) {
+       router.push('/connexion');
+       return;
+     }
+ 
+
+    if (!isAuthenticated) {
       router.push('/connexion');
+      return;
     }
-  }, [isAuthenticated, loading, router]);
 
-  // Charger les messages
-  const fetchMessages = useCallback(async () => {
+    if (user?.role !== 'admin') {
+      router.push('/');
+      return;
+    }
+  }, [isAuthenticated, user, loading, router]);
+
+  // Debounced search
+  const debouncedSearch = useMemo(
+    () => debounce((searchTerm: string) => {
+      setFilters(prev => ({ ...prev, search: searchTerm }));
+    }, 300),
+    []
+  );
+
+  // Optimized fetchMessages with caching
+  const fetchMessages = useCallback(async (silent: boolean = false) => {
     if (!isAuthenticated) return;
 
+    // Prevent concurrent requests
+    if (isLoading && !silent) return;
+
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       setError(null);
 
+      // Build query parameters
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
@@ -124,32 +178,38 @@ export default function AdminMessagesPage() {
         sortOrder: filters.sortOrder,
       });
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
       const response = await fetch(`/api/messages?${params}`, {
         credentials: 'include',
+        signal: controller.signal,
       });
 
-      if (response.status === 403) {
-        router.push('/');
-        return;
-      }
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error('Erreur lors du chargement des messages');
       }
 
       const result = await response.json();
-      console.log('Response status:', response.status);
-
+      
       setMessages(result.data.messages);
       setStats(result.data.stats);
       setPagination(result.data.pagination);
     } catch (err: any) {
-      setError(err.message);
-      toastError(err.message);
+      if (err.name !== 'AbortError') {
+        setError(err.message);
+        if (!silent) {
+          toastError(err.message);
+        }
+      }
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
-  }, [isAuthenticated, router, toastError]);
+  }, [isAuthenticated, pagination.page, pagination.limit, filters.filter, filters.search, filters.showDeleted, filters.sortBy, filters.sortOrder, toastError]);
 
   // Effet pour les changements de filtres et pagination
   useEffect(() => {
@@ -167,68 +227,25 @@ export default function AdminMessagesPage() {
     isAuthenticated,
   ]);
 
-  // Rafraîchissement périodique - DÉSACTIVÉ temporairement
-  // useEffect(() => {
-  // if (!isAuthenticated) return
-  //
-  // const refreshMessages = async () => {
-  //   // Éviter le rafraîchissement si une action est en cours
-  //   if (isResponding || actionMessage) return
-  //
-  //   try {
-  //     setIsLoading(true)
-  //     setError(null)
-  //
-  //     const params = new URLSearchParams({
-  //       page: pagination.page.toString(),
-  //       limit: pagination.limit.toString(),
-  //       filter: filters.filter,
-  //       search: filters.search,
-  //       showDeleted: filters.showDeleted.toString(),
-  //       sortBy: filters.sortBy,
-  //       sortOrder: filters.sortOrder
-  //     })
-  //
-  //     const response = await fetch(`/api/messages?${params}`, {
-  //       credentials: 'include'
-  //     })
-  //
-  //     if (response.status === 403) {
-  //       router.push('/')
-  //       return
-  //     }
-  //
-  //     if (!response.ok) {
-  //       throw new Error('Erreur lors du chargement des messages')
-  //     }
-  //
-  //     const result = await response.json()
-  //     setMessages(result.data.messages)
-  //     setStats(result.data.stats)
-  //     setPagination(result.data.pagination)
-  //   } catch (err: any) {
-  //     setError(err.message)
-  //     toastError(err.message)
-  //   } finally {
-  //     setIsLoading(false)
-  //   }
-  // }
-  //
-  // // Charger au montage
-  // refreshMessages()
-  //
-  // // Rafraîchir toutes les 60 secondes (au lieu de 30)
-  // const interval = setInterval(refreshMessages, 60000)
-  //
-  // return () => clearInterval(interval)
-  // }, [isAuthenticated, pagination.page, pagination.limit, filters.filter, filters.search, filters.showDeleted, filters.sortBy, filters.sortOrder, isResponding, actionMessage, router, toastError])
+  // Rafraîchissement automatique toutes les 30 secondes
+  useEffect(() => {
+    if (!isAuthenticated) return;
 
-  console.log(
-    'Rafraîchissement périodique désactivé pour éviter la boucle infinie'
-  );
+    const interval = setInterval(() => {
+      // Rafraîchissement silencieux sans afficher le loader ni les erreurs
+      fetchMessages(true);
+    }, 30000); // 30 secondes
 
-  // Actions sur les messages
+    return () => clearInterval(interval);
+  }, [isAuthenticated, fetchMessages]);
+
+  // Optimized markAsRead with optimistic updates
   const markAsRead = async (messageId: string, read: boolean = true) => {
+    // Optimistic update
+    setMessages(prev => prev.map(msg => 
+      msg.id === messageId ? { ...msg, isRead: read } : msg
+    ));
+
     try {
       const response = await fetch(`/api/messages`, {
         method: 'PATCH',
@@ -239,15 +256,45 @@ export default function AdminMessagesPage() {
 
       if (!response.ok) throw new Error('Erreur lors de la mise à jour');
 
-      await fetchMessages();
+      // Update stats optimistically
+      setStats(prev => ({
+        ...prev,
+        unread: read ? Math.max(0, prev.unread - 1) : prev.unread + 1
+      }));
+
       success(read ? 'Message marqué comme lu' : 'Message marqué comme non lu');
     } catch (err) {
+      // Revert optimistic update on error
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId ? { ...msg, isRead: !read } : msg
+      ));
       toastError('Erreur lors de la mise à jour');
     }
   };
 
   const sendResponse = async () => {
     if (!selectedMessage || !responseText.trim()) return;
+
+    // Ouvrir le popover de confirmation au lieu d'envoyer directement
+    setReplyConfirm({ 
+      isOpen: true, 
+      messageId: selectedMessage.id, 
+      responseText: responseText.trim() 
+    });
+  };
+
+  const confirmReply = async () => {
+    if (!replyConfirm.messageId || !replyConfirm.responseText) return;
+
+    // Store original state for rollback
+    const originalMessage = messages.find(m => m.id === replyConfirm.messageId);
+    
+    // Optimistic update
+    setMessages(prev => prev.map(msg => 
+      msg.id === replyConfirm.messageId 
+        ? { ...msg, response: replyConfirm.responseText, isReplied: true, isRead: true }
+        : msg
+    ));
 
     try {
       setIsResponding(true);
@@ -257,40 +304,92 @@ export default function AdminMessagesPage() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          id: selectedMessage.id,
-          response: responseText.trim(),
+          id: replyConfirm.messageId,
+          response: replyConfirm.responseText,
         }),
       });
 
       if (!response.ok) throw new Error("Erreur lors de l'envoi");
 
-      await fetchMessages();
+      // Update stats optimistically
+      setStats(prev => ({
+        ...prev,
+        unreplied: Math.max(0, prev.unreplied - 1),
+        unread: Math.max(0, prev.unread - (originalMessage?.isRead ? 0 : 1))
+      }));
+
       setSelectedMessage(null);
       setResponseText('');
+      setReplyConfirm({ isOpen: false, messageId: null, responseText: '' });
       success('Réponse envoyée avec succès');
     } catch (err) {
+      // Revert optimistic update on error
+      if (originalMessage) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === replyConfirm.messageId ? originalMessage : msg
+        ));
+      }
       toastError("Erreur lors de l'envoi de la réponse");
     } finally {
       setIsResponding(false);
     }
   };
 
+  const cancelReply = () => {
+    setReplyConfirm({ isOpen: false, messageId: null, responseText: '' });
+  };
+
   const deleteMessage = async (messageId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) return;
+    // Ouvrir le popover de confirmation au lieu du confirm()
+    setDeleteConfirm({ isOpen: true, messageId, messageCount: 1 });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.messageId) return;
+
+    // Store original message for rollback
+    const originalMessage = messages.find(m => m.id === deleteConfirm.messageId);
+    
+    // Optimistic update
+    setMessages(prev => prev.filter(msg => msg.id !== deleteConfirm.messageId));
+    
+    // Update stats optimistically
+    if (originalMessage) {
+      setStats(prev => ({
+        ...prev,
+        total: Math.max(0, prev.total - 1),
+        unread: Math.max(0, prev.unread - (originalMessage.isRead ? 0 : 1)),
+        unreplied: Math.max(0, prev.unreplied - (originalMessage.isReplied ? 0 : 1))
+      }));
+    }
 
     try {
-      const response = await fetch(`/api/messages?id=${messageId}`, {
+      const response = await fetch(`/api/messages?id=${deleteConfirm.messageId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
 
       if (!response.ok) throw new Error('Erreur lors de la suppression');
 
-      await fetchMessages();
       success('Message supprimé avec succès');
+      setDeleteConfirm({ isOpen: false, messageId: null });
     } catch (err) {
+      // Revert optimistic update on error
+      if (originalMessage) {
+        setMessages(prev => [...prev, originalMessage]);
+        setStats(prev => ({
+          ...prev,
+          total: prev.total + 1,
+          unread: prev.unread + (originalMessage.isRead ? 0 : 1),
+          unreplied: prev.unreplied + (originalMessage.isReplied ? 0 : 1)
+        }));
+      }
       toastError('Erreur lors de la suppression');
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirm({ isOpen: false, messageId: null });
   };
 
   const toggleSelectMessage = (messageId: string) => {
@@ -310,7 +409,12 @@ export default function AdminMessagesPage() {
   };
 
   const bulkDelete = async () => {
-    if (!confirm(`Supprimer ${selectedMessages.length} message(s) ?`)) return;
+    // Ouvrir le popover de confirmation pour la suppression groupée
+    setDeleteConfirm({ isOpen: true, messageId: null, messageCount: selectedMessages.length });
+  };
+
+  const confirmBulkDelete = async () => {
+    if (!deleteConfirm.messageCount || deleteConfirm.messageCount === 0) return;
 
     try {
       await Promise.all(
@@ -324,7 +428,8 @@ export default function AdminMessagesPage() {
       await fetchMessages();
       setSelectedMessages([]);
       setIsBulkMode(false);
-      success(`${selectedMessages.length} message(s) supprimé(s)`);
+      success(`${deleteConfirm.messageCount} message(s) supprimé(s)`);
+      setDeleteConfirm({ isOpen: false, messageId: null, messageCount: 0 });
     } catch (err) {
       toastError('Erreur lors de la suppression multiple');
     }
@@ -373,8 +478,13 @@ export default function AdminMessagesPage() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Réinitialiser les heures pour comparer uniquement les jours
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    
+    const diffTime = today.getTime() - messageDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) {
       return `Aujourd'hui ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
@@ -438,7 +548,7 @@ export default function AdminMessagesPage() {
   // Rendu du loader
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-green-50 to-emerald-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="relative">
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-200 border-t-green-600 mx-auto"></div>
@@ -458,6 +568,98 @@ export default function AdminMessagesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
+      {/* Popover de confirmation de suppression */}
+      {deleteConfirm.isOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg shadow-2xl border border-gray-200 p-6 max-w-md mx-4 transition-all duration-200 ease-in-out">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <FiTrash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {deleteConfirm.messageCount === 1 
+                    ? 'Supprimer ce message ?' 
+                    : `Supprimer ${deleteConfirm.messageCount} messages ?`
+                  }
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Cette action est irréversible. Voulez-vous continuer ?
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={cancelDelete}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={deleteConfirm.messageCount === 1 ? confirmDelete : confirmBulkDelete}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors"
+              >
+                {deleteConfirm.messageCount === 1 ? 'Supprimer' : 'Supprimer tout'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popover de confirmation de réponse */}
+      {replyConfirm.isOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg shadow-2xl border border-gray-200 p-6 max-w-md mx-4 transition-all duration-200 ease-in-out">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <FiSend className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Envoyer la réponse ?
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Confirmez l'envoi de votre réponse au message.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={cancelReply}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmReply}
+                disabled={isResponding}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                {isResponding ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <span>Envoi en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <FiSend className="w-4 h-4" />
+                    <span>Envoyer</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Head>
+        <title>Messages - Admin - Ambassade Du Mali Au Maroc</title>
+        <meta name="description" content="Interface d'administration pour consulter et répondre aux messages reçus." />
+        <meta name="robots" content="noindex,nofollow" />
+        <link rel="icon" href="/favicon.png" />
+      </Head>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
         <div className="max-w-7xl mx-auto">
@@ -537,7 +739,7 @@ export default function AdminMessagesPage() {
 
               {/* Rafraîchir */}
               <button
-                onClick={fetchMessages}
+                onClick={() => fetchMessages()}
                 disabled={isLoading}
                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50"
                 title="Rafraîchir"
@@ -556,7 +758,7 @@ export default function AdminMessagesPage() {
               type="text"
               placeholder="Rechercher par email, nom ou contenu..."
               value={filters.search}
-              onChange={e => handleFilterChange({ search: e.target.value })}
+              onChange={e => debouncedSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
@@ -859,7 +1061,7 @@ export default function AdminMessagesPage() {
                       )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-green-100 to-emerald-100 rounded-lg flex items-center justify-center">
+                          <div className="shrink-0 h-10 w-10 bg-linear-to-br from-green-100 to-emerald-100 rounded-lg flex items-center justify-center">
                             <FiUser className="w-5 h-5 text-green-600" />
                           </div>
                           <div className="ml-4">
@@ -888,7 +1090,7 @@ export default function AdminMessagesPage() {
                           </p>
                           {message.response && (
                             <div className="mt-1 text-xs text-green-600 flex items-center gap-1">
-                              <FiRepeat className="w-3 h-3 flex-shrink-0" />
+                              <FiRepeat className="w-3 h-3 shrink-0" />
                               <span className="line-clamp-1">
                                 Réponse: {message.response}
                               </span>
@@ -1170,12 +1372,12 @@ export default function AdminMessagesPage() {
                             ? `${message.firstName} ${message.lastName}`.trim()
                             : 'Anonyme'}
                         </div>
-                        <div className="text-xs text-gray-500 truncate max-w-[100px]">
+                        <div className="text-xs text-gray-500 truncate max-w-25">
                           {message.email}
                         </div>
                       </td>
                       <td className="px-3 py-2">
-                        <p className="text-xs text-gray-900 line-clamp-1 max-w-[150px]">
+                        <p className="text-xs text-gray-900 line-clamp-1 max-w-37.5">
                           {message.message}
                         </p>
                         <p className="text-xs text-gray-400">
@@ -1423,7 +1625,15 @@ export default function AdminMessagesPage() {
                   Annuler
                 </button>
                 <button
-                  onClick={sendResponse}
+                  onClick={() => {
+                    if (selectedMessage && responseText.trim()) {
+                      setReplyConfirm({ 
+                        isOpen: true, 
+                        messageId: selectedMessage.id, 
+                        responseText: responseText.trim() 
+                      });
+                    }
+                  }}
                   disabled={!responseText.trim() || isResponding}
                   className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 order-1 sm:order-2"
                 >

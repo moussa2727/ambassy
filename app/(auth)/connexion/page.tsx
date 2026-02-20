@@ -1,5 +1,5 @@
-// app/(auth)/connexion/page.tsx
 import { Suspense } from 'react';
+import { Metadata } from 'next';
 import Login from '@/components/auth/Login';
 import { Loader2 } from 'lucide-react';
 export default function Connexion() {
@@ -15,3 +15,10 @@ export default function Connexion() {
     </Suspense>
   );
 }
+
+export const metadata: Metadata = {
+  title: 'Connexion - Ambassade Du Mali Au Maroc',
+  description: 'Page de connexion sécurisée pour les utilisateurs inscrits.',
+  robots: { index: false, follow: false },
+  icons: { icon: '/favicon.png' },
+};

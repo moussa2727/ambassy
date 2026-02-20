@@ -2,14 +2,14 @@
 import { NextRequest } from 'next/server';
 import { UserCreateSchema } from '@/schemas/user.schema';
 import { hash } from 'bcryptjs';
-import clientPromise from '@/lib/mongo';
+import clientPromise from '@/lib/data/mongo';
 
 // Email qui doit être admin
 const ADMIN_EMAIL = process.env.EMAIL_USER;
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await (req as any).json();
 
     // Validation des données
     const validation = UserCreateSchema.safeParse(body);

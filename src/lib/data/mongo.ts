@@ -72,4 +72,12 @@ export async function getMessagesCollection() {
   return db.collection('messages');
 }
 
+
+// export async function getBlogCollection() {
+//   const client = await connectDB();
+//   const db = client.db();
+//   return db.collection('blog');
+// }
+
+
 export default clientPromise;

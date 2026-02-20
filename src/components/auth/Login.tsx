@@ -11,9 +11,9 @@ import {
   Lock,
   AlertCircle,
   Loader2,
+  Shield,
 } from 'lucide-react';
-import { useAuth } from '@/services/auth/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -109,7 +109,9 @@ export default function LoginPage() {
                 <div>
                   <h2 className="text-xl font-bold">Connexion</h2>
                   <p className="text-green-100 text-sm mt-1">
-                    Accédez à votre espace personnel
+                    {/* Message d'attention pour les administrateurs avec icons de panneau bloquant */}
+                    <Shield className="w-4 h-4 inline mr-1" />  
+                    Attention : espace réservé aux administrateurs !
                   </p>
                 </div>
                 <Link
@@ -146,6 +148,7 @@ export default function LoginPage() {
                       className="w-full pl-11 pr-4 py-3 bg-green-50 border border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                       placeholder="exemple@ambassade.ml"
                       required
+                      autoComplete="email"
                       disabled={isSubmitting}
                     />
                   </div>

@@ -1,4 +1,3 @@
-export * from './blog';
 import { ObjectId, Types } from 'mongoose';
 
 // Types pour les utilisateurs
@@ -88,4 +87,18 @@ export interface PaginatedResponse<T> {
     hasNextPage: boolean;
     hasPrevPage: boolean;
   };
+}
+
+
+
+// Blog post type
+export interface Post {
+  id: number
+  cat: string
+  featured: boolean
+  title: string
+  excerpt: string
+  date: string
+  img: string
+  body: string
 }

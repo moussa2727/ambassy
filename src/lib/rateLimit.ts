@@ -16,7 +16,7 @@ export function rateLimit(options: {
 }) {
   const { windowMs, max, identifier = 'default' } = options;
 
-  return async function checkRateLimit(req: Request): Promise<{
+  return async function checkRateLimit(req: any): Promise<{
     success: boolean;
     limit: number;
     remaining: number;
@@ -28,7 +28,6 @@ export function rateLimit(options: {
     const key = `${identifier}:${ip}`;
 
     const now = Date.now();
-    const windowStart = now - windowMs;
 
     // Nettoyer les entrées expirées
     if (store[key] && store[key].resetTime < now) {

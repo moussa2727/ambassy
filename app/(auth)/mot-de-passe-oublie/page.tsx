@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Head from 'next/head';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -42,6 +43,12 @@ export default function ForgotPasswordPage() {
   if (isSubmitted) {
     return (
       <main className="min-h-screen bg-linear-to-b from-green-50 via-white to-green-50 flex flex-col">
+        <Head>
+          <title>Mot de passe oublié - Ambassade Du Mali Au Maroc</title>
+          <meta name="description" content="Demande de réinitialisation de mot de passe pour les utilisateurs." />
+          <meta name="robots" content="noindex,nofollow" />
+          <link rel="icon" href="/favicon.png" />
+        </Head>
         {/* Header */}
         <header className="h-[30vh] bg-linear-to-b from-green-600 to-green-500 flex items-center justify-center relative overflow-hidden mb-5">
           <div className="absolute inset-0 opacity-10">
@@ -104,6 +111,12 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="min-h-screen bg-linear-to-b from-green-50 via-white to-green-50 flex flex-col">
+      <Head>
+        <title>Mot de passe oublié - Ambassade Du Mali Au Maroc</title>
+        <meta name="description" content="Demande de réinitialisation de mot de passe pour les utilisateurs." />
+        <meta name="robots" content="noindex,nofollow" />
+        <link rel="icon" href="/favicon.png" />
+      </Head>
       {/* Header */}
       <header className="h-[30vh] bg-linear-to-b from-green-600 to-green-500 flex items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
@@ -227,3 +240,5 @@ export default function ForgotPasswordPage() {
     </main>
   );
 }
+
+// metadata injected via client-side <Head> because this is a client component

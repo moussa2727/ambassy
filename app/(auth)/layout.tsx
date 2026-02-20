@@ -1,27 +1,23 @@
-// app/(auth)/layout.tsx
-'use client';
+import type { Metadata } from "next";
+import { AuthProvider } from "@/lib/auth/AuthContext";
 
-import { AuthProvider } from '@/services/auth/AuthContext';
-import { useEffect } from 'react';
-import AOS from 'aos';
-import 'aos/dist/aos.css';
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+  icons: {
+    icon: "/favicon.png",
+  },
+};
 
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  useEffect(() => {
-    AOS.init({
-      duration: 800,
-      once: true,
-    });
-  }, []);
-
   return (
     <AuthProvider>
-      {' '}
-      {/* ← Provider uniquement pour les pages d'auth */}
       {children}
     </AuthProvider>
   );

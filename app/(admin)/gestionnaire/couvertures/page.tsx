@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
+import Head from 'next/head';
 import {
   FiPlus,
   FiSearch,
@@ -260,6 +261,13 @@ export default function CouverturesPage() {
 
   return (
     <>
+      <Head>
+        <title>Gestion des Couvertures - Admin - Ambassade Du Mali Au Maroc</title>
+        <meta name="description" content="Panneau d'administration pour suivre et gérer les couvertures et demandes." />
+        <meta name="robots" content="noindex,nofollow" />
+        <link rel="icon" href="/favicon.png" />
+      </Head>
+
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

@@ -2,7 +2,7 @@
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { verify } from 'jsonwebtoken';
-import clientPromise from '@/lib/mongo';
+import clientPromise from '@/lib/data/mongo';
 import { ObjectId } from 'mongodb';
 
 export async function GET(req: NextRequest) {

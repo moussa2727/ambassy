@@ -1,9 +1,9 @@
 // app/api/auth/refresh/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { verify, sign } from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
-import clientPromise from '@/lib/mongo';
+import clientPromise from '@/lib/data/mongo';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,10 +11,10 @@ export async function POST(req: NextRequest) {
     const refreshToken = cookieStore.get('refresh_token')?.value;
 
     if (!refreshToken) {
-      return NextResponse.json(
-        { error: 'Refresh token manquant' },
-        { status: 401 }
-      );
+      return new Response(JSON.stringify({ error: 'Refresh token manquant' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Vérification du refresh token
@@ -24,10 +24,10 @@ export async function POST(req: NextRequest) {
         userId: string;
       };
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Refresh token invalide ou expiré' },
-        { status: 401 }
-      );
+      return new Response(JSON.stringify({ error: 'Refresh token invalide ou expiré' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Connexion à MongoDB
@@ -42,7 +42,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'Session invalide' }, { status: 401 });
+      return new Response(JSON.stringify({ error: 'Session invalide' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Création d'un nouveau access token
@@ -53,29 +56,26 @@ export async function POST(req: NextRequest) {
         role: user.role,
       },
       process.env.JWT_ACCESS_SECRET!,
-      { expiresIn: '15m' }
+      { expiresIn: '45m' }
     );
 
     // Création de la réponse avec NextResponse au lieu de Response
-    const response = NextResponse.json({
-      message: 'Token rafraîchi avec succès',
-    });
+    // Build Set-Cookie header manually
+    const secureFlag = process.env.NODE_ENV === 'production' ? 'Secure; ' : '';
+    const cookieValue = `access_token=${newAccessToken}; Path=/; HttpOnly; ${secureFlag}SameSite=Lax; Max-Age=${45 * 60}`;
 
-    // Mise à jour du cookie access_token dans la réponse
-    response.cookies.set('access_token', newAccessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 15 * 60, // 15 minutes
-      path: '/',
+    return new Response(JSON.stringify({ message: 'Token rafraîchi avec succès' }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Set-Cookie': cookieValue,
+      },
     });
-
-    return response;
   } catch (error) {
     console.error('Erreur refresh:', error);
-    return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Erreur interne du serveur' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }

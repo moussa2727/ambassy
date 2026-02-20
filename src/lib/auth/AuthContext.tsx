@@ -173,12 +173,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         credentials: 'include',
       });
 
-      const data = await response.json();
 
       if (!response.ok) {
         if (response.status === 401) {
-          // Token expiré, déconnexion silencieuse
+          // Token expiré, déconnexion avec toast
           setUser(null);
+          toast.error('Session terminée - Veuillez vous reconnecter');
         }
         return false;
       }
@@ -204,6 +204,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!response.ok) {
         if (response.status === 401) {
           setUser(null);
+          toast.error('Session terminée - Veuillez vous reconnecter');
         }
         setLoading(false);
         return;

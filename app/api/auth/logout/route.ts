@@ -1,7 +1,7 @@
 // app/api/auth/logout/route.ts
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
-import clientPromise from '@/lib/mongo';
+import clientPromise from '@/lib/data/mongo';
 import { verify } from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
 

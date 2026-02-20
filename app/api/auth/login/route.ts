@@ -3,13 +3,13 @@ import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { sign } from 'jsonwebtoken';
 import { compare } from 'bcryptjs';
-import clientPromise from '@/lib/mongo';
+import clientPromise from '@/lib/data/mongo';
 import { rateLimit } from '@/lib/rateLimit';
-import { LoginSchema } from '@/schemas/index';
+import { LoginSchema } from '@/schemas';
 
 // Configuration du rate limiting
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 45 * 60 * 1000, // 45 minutes
   max: 5, // max 5 tentatives
   identifier: 'login',
 });
@@ -17,7 +17,7 @@ const loginLimiter = rateLimit({
 export async function POST(req: NextRequest) {
   try {
     // Vérifier le rate limiting
-    const rateLimitResult = await loginLimiter(req);
+    const rateLimitResult = await loginLimiter(req as unknown as Request);
 
     if (!rateLimitResult.success) {
       return Response.json(
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
+    const body = await (req as any).json();
 
     // Validation des données
     const validation = LoginSchema.safeParse(body);
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
         role: user.role,
       },
       process.env.JWT_ACCESS_SECRET!,
-      { expiresIn: '15m' }
+      { expiresIn: '45m' }
     );
 
     const refreshToken = sign(
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 15 * 60, // 15 minutes
+      maxAge: 45 * 60, // 45 minutes
       path: '/',
     });
 

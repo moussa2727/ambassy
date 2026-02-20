@@ -8,6 +8,7 @@ export interface AuthUser {
   role: 'user' | 'admin';
 }
 
+// Vérifie le token d'accès et retourne les informations de l'utilisateur ou null si non valide
 export async function verifyAuth(req: NextRequest): Promise<AuthUser | null> {
   try {
     const token = req.cookies.get('access_token')?.value;
@@ -27,6 +28,8 @@ export async function verifyAuth(req: NextRequest): Promise<AuthUser | null> {
   }
 }
 
+
+// Middleware pour exiger une authentification, avec option de rôles autorisés
 export function requireAuth(
   handler: (req: NextRequest, context: { user: AuthUser }) => Promise<Response>,
   allowedRoles?: ('user' | 'admin')[]
@@ -36,17 +39,45 @@ export function requireAuth(
     const user = await verifyAuth(req);
 
     if (!user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+      return new Response(JSON.stringify({ error: 'Non authentifié' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     if (allowedRoles && !allowedRoles.includes(user.role)) {
-      return NextResponse.json(
-        { error: 'Accès non autorisé' },
-        { status: 403 }
-      );
+      return new Response(JSON.stringify({ error: 'Accès non autorisé' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Propagation correcte des arguments
     return handler(req, { ...args, user });
   };
 }
+
+// Middleware pour exiger un rôle admin
+export const requireAdmin = (handler: (req: NextRequest, context: { user: AuthUser }) => Promise<Response>,
+allowedRole: 'admin' = 'admin'
+) => {
+  return requireAuth(handler, [allowedRole]);
+}
+
+// Middleware pour 
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  if (pathname.startsWith('/gestionnaire')) {
+    const res = NextResponse.next();
+    res.headers.set('x-robots-tag', 'noindex, nofollow');
+    return res;
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/gestionnaire/:path*'],
+};
+

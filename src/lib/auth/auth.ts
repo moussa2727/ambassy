@@ -4,7 +4,7 @@ import type { TokenPayload, Tokens } from '@/types'
 
 const JWT_SECRET = process.env.JWT_SECRET!
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!
-const ACCESS_TOKEN_EXPIRY = process.env.JWT_EXPIRES_IN || '15m'
+const ACCESS_TOKEN_EXPIRY = process.env.JWT_EXPIRES_IN || '45m'
 const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d'
 const SECURE_COOKIES = process.env.SECURE_COOKIES === 'true'
 
@@ -74,7 +74,7 @@ export const setAuthCookies = async (tokens: Tokens) => { // Ajouté async
       secure,
       sameSite,
       path: '/',
-      maxAge: 15 * 60
+      maxAge: 45 * 60
     })
 
     cookieStore.set('refresh_token', tokens.refresh_token, {

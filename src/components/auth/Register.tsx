@@ -13,7 +13,7 @@ import {
   FiEye,
   FiHome,
 } from 'react-icons/fi';
-import { useAuth } from '@/services/auth/AuthContext';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 export default function RegisterPage() {
   const router = useRouter();

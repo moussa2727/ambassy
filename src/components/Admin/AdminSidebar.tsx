@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, memo, useRef } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@/lib/auth/AuthContext';
 import {
   BarChart3,
   Users,
@@ -15,7 +16,7 @@ import {
   BookOpen,
   Globe,
   Newspaper,
-  Bell,
+  Settings,
 } from 'lucide-react';
 import { motion, AnimatePresence, AnimationGeneratorType } from 'framer-motion';
 
@@ -59,11 +60,9 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [userRole, setUserRole] = useState<string>('');
+  const { user, isAuthenticated, loading, logout } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
-  const isFetchingRef = useRef(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   const menuItems: MenuItem[] = [
     { href: '/gestionnaire/statistiques', icon: BarChart3, label: 'Stats' },
@@ -84,50 +83,20 @@ export default function AdminSidebar({
     },
   ];
 
-  const getUserRole = useCallback(() => {
-    try {
-      const cookieMap = new Map(
-        document.cookie.split(';').map(cookie => {
-          const [name, value] = cookie.trim().split('=');
-          return [name, decodeURIComponent(value)];
-        })
-      );
-      return cookieMap.get('user_role') || '';
-    } catch {
-      return '';
-    }
-  }, []);
-
   useEffect(() => {
     setIsMounted(true);
-    setUserRole(getUserRole());
-  }, [getUserRole]);
+  }, []);
 
-  // Récupérer le nombre de messages non lus - VERSION CORRIGÉE
+  // Récupérer le nombre de messages non lus - VERSION SIMPLE
   useEffect(() => {
-    if (!isMounted) return;
+    if (!isMounted || !isAuthenticated || !user || user.role !== 'admin') return;
 
     const fetchUnreadCount = async () => {
-      // Annuler la requête précédente si elle existe
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-
-      // Éviter les fetchs simultanés
-      if (isFetchingRef.current) return;
-
-      // Créer un nouveau controller pour cette requête
-      abortControllerRef.current = new AbortController();
-
       try {
-        isFetchingRef.current = true;
-
         const response = await fetch(
           '/api/messages?page=1&limit=1&filter=unread&showDeleted=false&sortBy=createdAt&sortOrder=desc',
           {
             credentials: 'include',
-            method: 'GET',
-            signal: abortControllerRef.current.signal,
             headers: {
               Accept: 'application/json',
             },
@@ -136,65 +105,26 @@ export default function AdminSidebar({
 
         if (response.ok) {
           const data = await response.json();
-          // Vérifier la structure de la réponse
           const unread = data.data?.stats?.unread ?? 0;
           setUnreadCount(unread);
-          console.log('Status:', response.status);
-        } else {
-          // Log l'erreur mais ne pas mettre à jour le compteur
-          console.error(
-            ' Erreur API messages:',
-            response.status,
-            response.statusText
-          );
-
-          // Essayer de lire le corps de l'erreur
-          try {
-            const errorData = await response.json();
-            console.error('Détails erreur:', errorData);
-          } catch {
-            // Ignorer si pas de JSON
-          }
         }
-      } catch (error: any) {
-        // Ignorer les erreurs d'abort
-        if (error.name === 'AbortError') {
-          console.log('Requête annulée');
-          return;
-        }
-        console.error(' Erreur fetch:', error);
-      } finally {
-        isFetchingRef.current = false;
-        abortControllerRef.current = null;
+      } catch (error) {
+        console.error('Erreur lors de la récupération des messages:', error);
       }
     };
 
-    // Charger au montage avec un petit délai pour éviter les conflits
-    const timeoutId = setTimeout(fetchUnreadCount, 100);
-
-    // Rafraîchir toutes les 30 secondes
-    const interval = setInterval(fetchUnreadCount, 30000);
-
-    return () => {
-      clearTimeout(timeoutId);
-      clearInterval(interval);
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [isMounted]);
+    // Charger une seule fois au montage
+    fetchUnreadCount();
+  }, [isMounted, isAuthenticated, user]);
 
   const handleLogout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await logout();
       router.push('/');
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error);
     }
-  }, [router]);
+  }, [router, logout]);
 
   // Animations
   const sidebarVariants = {
@@ -243,48 +173,26 @@ export default function AdminSidebar({
             variants={sidebarVariants}
             className="fixed left-0 top-0 h-screen bg-gradient-to-b from-emerald-50 to-white border-r border-emerald-100/80 flex flex-col z-50 shadow-lg shadow-emerald-900/10 overflow-hidden"
           >
-            {/* Header avec logo - plus compact */}
-            <div className="p-4 border-b border-emerald-100/80 bg-white/50 backdrop-blur-sm">
-              <div className="flex items-center justify-between">
-                <motion.div
-                  initial="hidden"
-                  animate="visible"
-                  variants={contentVariants}
-                  className="flex items-center gap-2.5"
-                >
-                  <div className="relative">
-                    <Link
-                      href="/"
-                      className="w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm shadow-emerald-600/30"
-                    >
-                      <Shield className="w-5 h-5 text-white" />
-                    </Link>
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white"></div>
-                  </div>
-                  <div>
-                    <h1 className="font-bold text-emerald-900 text-base leading-tight">
-                      Dashboard
-                    </h1>
-                    <p className="text-[10px] text-emerald-600 font-medium uppercase tracking-wider">
-                      Admin
-                    </p>
-                  </div>
-                </motion.div>
+            
 
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onToggle}
-                  className="p-1.5 hover:bg-emerald-100 rounded-lg transition-colors group"
-                  aria-label="Réduire le menu"
-                >
-                  <ChevronLeft className="w-4 h-4 text-emerald-600" />
-                </motion.button>
-              </div>
+            {/* Bouton de rétraction dans la sidebar */}
+            <div className="absolute right-2 top-2">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onToggle}
+                className="p-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-md transition-colors group"
+                aria-label="Rétracter le menu"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-emerald-800 text-white text-xs font-medium px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  Rétracter
+                </span>
+              </motion.button>
             </div>
 
             {/* Informations utilisateur - plus compactes */}
-            {userRole && (
+            {isAuthenticated && user && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -292,29 +200,25 @@ export default function AdminSidebar({
               >
                 <div className="flex items-center gap-2.5">
                   <div className="relative">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-lg flex items-center justify-center border border-emerald-200 shadow-sm">
-                      {userRole === 'admin' ? (
-                        <Shield className="w-5 h-5 text-emerald-700" />
+                    <Link
+                      href="/"
+                      className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-sm shadow-emerald-600/30"
+                    >
+                      {user.role === 'admin' ? (
+                        <Settings className="w-5 h-5 text-emerald-700" />
                       ) : (
                         <User className="w-5 h-5 text-emerald-700" />
                       )}
-                    </div>
-                    <div
-                      className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
-                        userRole === 'admin'
-                          ? 'bg-emerald-500'
-                          : 'bg-emerald-400'
-                      }`}
-                    ></div>
+                    </Link>
                   </div>
                   <div className="overflow-hidden flex-1">
                     <p className="font-medium text-emerald-900 text-sm truncate">
-                      {userRole === 'admin' ? 'Admin' : 'User'}
+                      Espace administrateur 
                     </p>
                     <div className="flex items-center gap-1">
                       <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
                       <span className="text-[10px] text-emerald-600">
-                        en ligne
+                        en ligne - Rôle : {user.role}
                       </span>
                     </div>
                   </div>

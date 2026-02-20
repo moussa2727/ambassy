@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
+import Head from 'next/head';
 import {
   FiPlus,
   FiSearch,
@@ -195,6 +196,13 @@ export default function EquipePage() {
 
   return (
     <>
+      <Head>
+        <title>Gestion de l'équipe - Admin - Ambassade Du Mali Au Maroc</title>
+        <meta name="description" content="Panneau d'administration pour gérer les membres de l'équipe et leurs rôles." />
+        <meta name="robots" content="noindex,nofollow" />
+        <link rel="icon" href="/favicon.png" />
+      </Head>
+
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

@@ -28,3 +28,5 @@
 # Exclude build files from line ending checks
 .next/** -text
 node_modules/** -text
+./next/** 
+./node_modules/**

@@ -640,6 +640,8 @@ const EmbassyCoverageForm: React.FC = () => {
                         Parcourir
                         <input
                           type="file"
+                          id="photo"
+                          name="photo"
                           accept="image/*"
                           onChange={handlePhotoUpload}
                           className="hidden"

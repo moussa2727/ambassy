@@ -1,6 +1,7 @@
 // src/types/next.d.ts
 declare module 'next/server' {
   export class NextResponse {
+    [x: string]: any
     static next(config?: { request?: any }): NextResponse
     static redirect(url: string | URL, init?: number | ResponseInit): NextResponse
     static rewrite(destination: string | URL, init?: ResponseInit): NextResponse

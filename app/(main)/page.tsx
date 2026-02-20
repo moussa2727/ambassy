@@ -1,16 +1,16 @@
 import Hero from '@/components/accueil/Hero';
 import Mission from '@/components/shared/Mission';
 import { Metadata } from 'next';
-import { getAllPosts } from '@/lib/data/blog-data';
-import BlogList from '@/components/blog/Bloglist';
 import ContactSection from '@/components/contact/ContactSection';
 
+
 export default function Home() {
+  
   return (
     <>
       <Hero />
       <Mission />
-      <BlogList posts={getAllPosts()} />
+      
       <ContactSection />
     </>
   );
