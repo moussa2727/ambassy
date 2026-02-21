@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from 'react';
-import Head from 'next/head';
+import { useState, useEffect } from 'react';
+
 import {
   FiPlus,
   FiSearch,
@@ -162,12 +162,6 @@ export default function BlogPage() {
 
   return (
     <>
-      <Head>
-        <title>Gestion du Blog - Admin - Ambassade Du Mali Au Maroc</title>
-        <meta name="description" content="Panneau d'administration pour gérer les articles du blog." />
-        <meta name="robots" content="noindex,nofollow" />
-        <link rel="icon" href="/favicon.png" />
-      </Head>
 
       <div className="space-y-6">
         {/* Header */}

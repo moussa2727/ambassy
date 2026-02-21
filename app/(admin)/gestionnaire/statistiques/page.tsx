@@ -1,6 +1,7 @@
 "use client";
 
-import Head from 'next/head';
+import LoadingSpinner from '@/components/admin/shared/LoadingSpinner';
+import { useState, useEffect } from 'react';
 
 import {
   LineChart,
@@ -95,6 +96,21 @@ const recentActivities = [
 ];
 
 export default function StatistiquesPage() {
+  const [loading, setLoading] = useState(true);
+
+  // Simuler le chargement des données
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Afficher le loader pendant le chargement
+  if (loading) {
+    return <LoadingSpinner message="Chargement des statistiques..." icon="chart" />;
+  }
+
   const currentDate = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long',
     year: 'numeric',
@@ -104,12 +120,6 @@ export default function StatistiquesPage() {
 
   return (
     <>
-      <Head>
-        <title>Tableau de bord - Admin - Ambassade Du Mali Au Maroc</title>
-        <meta name="description" content="Tableau de bord administrateur avec statistiques et indicateurs clés." />
-        <meta name="robots" content="noindex,nofollow" />
-        <link rel="icon" href="/favicon.png" />
-      </Head>
 
       <div className="space-y-8">
         {/* Header */}

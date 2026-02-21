@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from 'react';
-import Head from 'next/head';
+import { useState, useEffect } from 'react';
 import { AmbassadorData } from '@/components/about/Ambassador';
+
 import {
   FiPlus,
   FiSearch,
@@ -118,15 +118,6 @@ export default function AmbassadorPage() {
 
   return (
     <>
-      <Head>
-        <title>Gestion des Ambassadeurs - Ambassade Du Mali Au Maroc</title>
-        <meta
-          name="description"
-          content="Gestionnaire des ambassadeurs diplomatiques et éducatifs de l'ambassade du Mali"
-        />
-        <meta name="robots" content="noindex,nofollow" />
-        <link rel="icon" href="/favicon.png" />
-      </Head>
 
       <div className="space-y-6">
         {/* Header */}

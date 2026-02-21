@@ -280,7 +280,7 @@ export async function POST(request: Request): Promise<Response> {
 export const PATCH = requireAdmin(
   async (req: NextRequest, context: { user: AuthUser }): Promise<Response> => {
     try {
-    const body = await (req as unknown as Request).json();
+      const body = await (req as any).json();
 
       // Validation des données
       const validatedData = MessageUpdateSchema.parse(
@@ -398,7 +398,7 @@ export const PATCH = requireAdmin(
   }
 );
 
-// DELETE - Version améliorée (optionnelle)
+// DELETE - Suppréssion de messages(soft delete)
 export const DELETE = requireAdmin(
   async (req: NextRequest, context: { user: AuthUser }): Promise<Response> => {
     try {

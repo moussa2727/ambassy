@@ -185,9 +185,6 @@ export default function AdminSidebar({
                 aria-label="Rétracter le menu"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
-                <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-emerald-800 text-white text-xs font-medium px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  Rétracter
-                </span>
               </motion.button>
             </div>
 
@@ -218,6 +215,8 @@ export default function AdminSidebar({
                     <div className="flex items-center gap-1">
                       <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
                       <span className="text-[10px] text-emerald-600">
+                        {user.email}
+                        <br />
                         en ligne - Rôle : {user.role}
                       </span>
                     </div>
@@ -324,9 +323,6 @@ export default function AdminSidebar({
             aria-label="Développer le menu"
           >
             <ChevronRight className="w-4 h-4" />
-            <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-emerald-800 text-white text-xs font-medium px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              Menu
-            </span>
           </motion.button>
         )}
       </AnimatePresence>

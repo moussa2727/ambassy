@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from 'react';
-import Head from 'next/head';
+import { useState, useEffect } from 'react';
+import LoadingSpinner from '@/components/admin/shared/LoadingSpinner';
+
 import {
   FiPlus,
   FiSearch,
@@ -33,6 +34,7 @@ interface Membre {
 }
 
 export default function EquipePage() {
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartement, setFilterDepartement] = useState<string>('tous');
   const [filterStatut, setFilterStatut] = useState<string>('tous');
@@ -113,6 +115,19 @@ export default function EquipePage() {
       dateEmbauche: '2020-09-01',
     },
   ]);
+
+  // Simuler le chargement des données
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Afficher le loader pendant le chargement
+  if (loading) {
+    return <LoadingSpinner message="Chargement de l'équipe..." icon="users" />;
+  }
 
   const filteredMembres = membres.filter(membre => {
     const matchesSearch =
@@ -196,12 +211,6 @@ export default function EquipePage() {
 
   return (
     <>
-      <Head>
-        <title>Gestion de l'équipe - Admin - Ambassade Du Mali Au Maroc</title>
-        <meta name="description" content="Panneau d'administration pour gérer les membres de l'équipe et leurs rôles." />
-        <meta name="robots" content="noindex,nofollow" />
-        <link rel="icon" href="/favicon.png" />
-      </Head>
 
       <div className="space-y-6">
         {/* Header */}

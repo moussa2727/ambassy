@@ -2,6 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useToast } from '@/components/shared/Toast';
 
 // Types
@@ -50,9 +51,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { success, error } = useToast();
+  const pathname = usePathname();
 
-  // Vérifier l'authentification au chargement
+  // Vérifier si l'authentification doit être contrôlée sur cette route
+  const shouldCheckAuth = () => {
+    // Routes qui nécessitent une vérification d'authentification
+    const protectedRoutes = [
+      '/connexion',
+      '/inscription', 
+    ];
+    
+    // Routes sous /gestionnaire (avec n'importe quelle profondeur)
+    const isGestionnaireRoute = pathname.startsWith('/gestionnaire');
+    
+    return protectedRoutes.includes(pathname) || isGestionnaireRoute;
+  };
+
+  // Vérifier l'authentification au chargement uniquement sur les routes protégées
   useEffect(() => {
+    if (!shouldCheckAuth()) {
+      setLoading(false);
+      return;
+    }
+
     const checkAuth = async () => {
       try {
         await me();
@@ -62,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     checkAuth();
-  }, []);
+  }, [pathname]);
 
   // ==================== REGISTER ====================
   const register = async (userData: RegisterData) => {

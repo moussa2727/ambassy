@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from 'react';
-import Head from 'next/head';
 import { useRouter } from 'next/navigation';
 import {
   FiUser,
@@ -16,6 +15,7 @@ import {
   FiEyeOff,
 } from 'react-icons/fi';
 import { useAuth } from '@/lib/auth/AuthContext';
+import LoadingSpinner from '@/components/admin/shared/LoadingSpinner';
 
 export default function MonProfilPage() {
   const { user, isAuthenticated, loading, me } = useAuth();
@@ -184,26 +184,8 @@ export default function MonProfilPage() {
     setIsEditing(false);
   };
 
-  // Afficher un loader pendant le chargement
-  if (loading || !user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-200 border-t-emerald-600 mx-auto mb-4"></div>
-          <p className="text-emerald-700 font-medium">Chargement de votre profil...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
-      <Head>
-        <title>Mon Profil - Admin - Ambassade Du Mali Au Maroc</title>
-        <meta name="description" content="Espace profil administrateur." />
-        <meta name="robots" content="noindex,nofollow" />
-        <link rel="icon" href="/favicon.png" />
-      </Head>
 
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}

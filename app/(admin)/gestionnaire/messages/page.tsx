@@ -41,7 +41,6 @@ import {
 } from 'react-icons/fi';
 import { useToast } from '@/components/shared/Toast';
 import { useAuth } from '@/lib/auth/AuthContext';
-import Head from 'next/head';
 import React from 'react';
 
 interface Message {
@@ -131,12 +130,6 @@ export default function AdminMessagesPage() {
    React.useEffect(() => {
      if (loading) return;
  
-     if (!isAuthenticated) {
-       router.push('/connexion');
-       return;
-     }
- 
-
     if (!isAuthenticated) {
       router.push('/connexion');
       return;
@@ -205,9 +198,8 @@ export default function AdminMessagesPage() {
         }
       }
     } finally {
-      if (!silent) {
-        setIsLoading(false);
-      }
+      // TOUJOURS réinitialiser le loading, même en mode silent
+      setIsLoading(false);
     }
   }, [isAuthenticated, pagination.page, pagination.limit, filters.filter, filters.search, filters.showDeleted, filters.sortBy, filters.sortOrder, toastError]);
 
@@ -272,16 +264,6 @@ export default function AdminMessagesPage() {
     }
   };
 
-  const sendResponse = async () => {
-    if (!selectedMessage || !responseText.trim()) return;
-
-    // Ouvrir le popover de confirmation au lieu d'envoyer directement
-    setReplyConfirm({ 
-      isOpen: true, 
-      messageId: selectedMessage.id, 
-      responseText: responseText.trim() 
-    });
-  };
 
   const confirmReply = async () => {
     if (!replyConfirm.messageId || !replyConfirm.responseText) return;
@@ -545,23 +527,6 @@ export default function AdminMessagesPage() {
     );
   };
 
-  // Rendu du loader
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-linear-to-br from-green-50 to-emerald-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-200 border-t-green-600 mx-auto"></div>
-            <FiMail className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-green-600 animate-pulse" />
-          </div>
-          <p className="mt-4 text-green-700 font-medium">
-            Chargement de votre messagerie...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   if (!isAuthenticated) {
     return null;
   }
@@ -654,12 +619,6 @@ export default function AdminMessagesPage() {
         </div>
       )}
 
-      <Head>
-        <title>Messages - Admin - Ambassade Du Mali Au Maroc</title>
-        <meta name="description" content="Interface d'administration pour consulter et répondre aux messages reçus." />
-        <meta name="robots" content="noindex,nofollow" />
-        <link rel="icon" href="/favicon.png" />
-      </Head>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
         <div className="max-w-7xl mx-auto">
